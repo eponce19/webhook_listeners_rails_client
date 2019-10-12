@@ -7,23 +7,28 @@ class Webhooks::AwsSnsController < ApplicationController
 
     def listen
         begin
+            
             p "Receive event"
             p event = JSON.parse(request.raw_post)
-
-            case event['notification_type']
-              when 'Bounce'
-                email = JSON.parse(event['destination_email'])[0]
-                p "Bounce Blacklist email #{email}"
-                # Unsubscribe email or delete email from audience
-              when 'Complaint'
-                email = JSON.parse(event['destination_email'])[0]
-                p "Complaint Blacklist email #{email}"
-                # Unsubscribe email or delete email from audience
-            end
+            method = "handle_" + (event['notification_type'].tr('.', '_')).downcase
+            self.send method, event
+            
         rescue Exception => ex
             render :json => {:status => 400, :error => "Webhook failed"} and return
         end
         render :json => {:status => 200}
+    end
+
+    def handle_bounce(event)
+        email = JSON.parse(event['destination_email'])[0]
+        p "Bounce Blacklist email #{email}"
+        # Unsubscribe email or delete email from audience
+    end
+      
+    def handle_complaint(event)
+        email = JSON.parse(event['destination_email'])[0]
+        p "Complaint Blacklist email #{email}"
+        # Unsubscribe email or delete email from audience
     end
     
 end
